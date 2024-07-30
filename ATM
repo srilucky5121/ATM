@@ -1,0 +1,197 @@
+import ast
+
+def register(accounts):
+    RED = "\033[31m"
+    RESET = "\033[0m"
+
+    def getAccountNumber():
+        while True:
+            try:
+                accountNumber = int(input("Enter the account number: "))
+                if accounts and accountNumber in accounts.keys():
+                    print(f"{RED}Account number already registered! Enter another number...{RESET}")
+                else:
+                    break
+            except ValueError:
+                print("Invalid input! Please enter a valid number.")
+        return accountNumber
+
+    key = getAccountNumber()
+    accounts[key] = {
+        "Name": input("Enter your name: "),
+        "Password": input("Enter your password: "),
+        "Pin": int(input("Enter your Pin: ")),
+        "Balance": 0
+    }
+    print("Registered successfully")
+    return accounts
+
+def read():
+    try:
+        with open('accounts.txt', 'r') as f:
+            data = ast.literal_eval(f.read())
+            return data
+    except (FileNotFoundError, SyntaxError):
+        return {}
+
+def write(data):
+    with open('accounts.txt', 'w') as file:
+        file.write(str(data))
+
+class ATM:
+    def __init__(self):
+        self.count = 0
+        self.accounts = read()
+        self.choose()
+
+    def choose(self):
+        print("------------------ATM PROJECT-----------------")
+        print("\n1. Login\n2. Register\n")
+        try:
+            choice = int(input("Enter your choice: "))
+            if choice == 1:
+                self.login()
+            elif choice == 2:
+                accounts = register(self.accounts)
+                write(accounts)
+                self.choose()
+            else:
+                print("Invalid choice. Please select 1 or 2.")
+                self.choose()
+        except ValueError:
+            print("Invalid input! Please enter a number.")
+            self.choose()
+
+    def login(self):
+        try:
+            accountNumber = int(input("Enter your account number: "))
+            if accountNumber in self.accounts:
+                self.current = self.accounts[accountNumber]
+                self.Username = self.current['Name']
+                self.Password = self.current['Password']
+                self.Pin = self.current['Pin']
+                self.balance = self.current['Balance']
+                self.authenticate()
+            else:
+                print("Invalid Account")
+                self.choose()
+        except ValueError:
+            print("Invalid input! Please enter a valid number.")
+            self.choose()
+
+    def authenticate(self):
+        self.U_name = input("Enter your Username: ")
+        if self.U_name == self.Username:
+            while True:
+                self.U_password = input("Enter your Password: ")
+                if self.U_password == self.Password:
+                    self.options()
+                    break
+                elif self.count < 2:
+                    self.count += 1
+                    print(f"{self.count} Attempt(s) done. Only {3 - self.count} attempts available.")
+                else:
+                    print("Account blocked.")
+                    break
+        else:
+            print("Username does not match our records.")
+            self.choose()
+
+    def withdraw(self):
+        try:
+            withdrawAmount = int(input("Enter amount to withdraw: "))
+            pin = int(input("Enter your Pin number: "))
+            if pin == self.Pin:
+                if self.balance >= withdrawAmount:
+                    print(f"Your Previous Balance: {self.balance}")
+                    self.balance -= withdrawAmount
+                    print(f"Your Balance is: {self.balance}")
+                else:
+                    print("Insufficient Balance")
+            else:
+                print("Invalid Pin Number")
+            self.options()
+        except ValueError:
+            print("Invalid input! Please enter a valid number.")
+            self.options()
+
+    def deposit(self):
+        try:
+            depositAmount = int(input("Enter amount to deposit: "))
+            pin = int(input("Enter your Pin number: "))
+            if pin == self.Pin:
+                self.balance += depositAmount
+                print("Successfully Deposited...")
+            else:
+                print("PIN is not valid")
+            self.options()
+        except ValueError:
+            print("Invalid input! Please enter a valid number.")
+            self.options()
+
+    def balance(self):
+        try:
+            pin = int(input("Enter your Pin number: "))
+            if pin == self.Pin:
+                print(f"Your Balance is: {self.balance}")
+            else:
+                print("PIN is not valid")
+            self.options()
+        except ValueError:
+            print("Invalid input! Please enter a valid number.")
+            self.options()
+
+    def changePassword(self):
+        try:
+            pin = int(input("Enter your Pin number: "))
+            if pin == self.Pin:
+                currentPassword = input("Enter your Current Password: ")
+                if currentPassword == self.Password:
+                    while True:
+                        newPassword = input("Enter your New Password: ")
+                        reNewPassword = input("Re-enter Your New Password: ")
+                        if newPassword == reNewPassword:
+                            self.Password = newPassword
+                            print("Password Changed Successfully")
+                            break
+                        else:
+                            print("Passwords do not match. Please re-enter.")
+                else:
+                    print("Invalid Password")
+            else:
+                print("Invalid PIN")
+            self.options()
+        except ValueError:
+            print("Invalid input! Please enter a valid number.")
+            self.options()
+
+    def default(self):
+        print("Invalid Option. Please re-enter a valid option.")
+        self.options()
+
+    def exit(self):
+        self.current['Password'] = self.Password
+        self.current['Balance'] = self.balance
+        self.accounts[self.account_no] = self.current
+        write(self.accounts)
+        print("THANK YOU")
+
+    def options(self):
+        print("\n")
+        print("1 -> Withdraw\n2 -> Deposit\n3 -> Balance\n4 -> Change Password\n5 -> Exit\n")
+        try:
+            self.option = int(input("Enter your Option: "))
+            switch_dict = {
+                1: self.withdraw,
+                2: self.deposit,
+                3: self.balance,
+                4: self.changePassword,
+                5: self.exit
+            }
+            action = switch_dict.get(self.option, self.default)
+            action()
+        except ValueError:
+            print("Invalid input! Please enter a number.")
+            self.options()
+
+start = ATM()
